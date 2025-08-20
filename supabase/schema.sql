@@ -35,6 +35,13 @@ create policy if not exists "comments_select_public" on public.comments for sele
 -- 插入：必须登录且 owner_id=auth.uid()（允许使用列默认值）
 create policy if not exists "apps_insert_auth" on public.apps for insert with check (auth.uid() is not null and owner_id = auth.uid());
 create policy if not exists "comments_insert_auth" on public.comments for insert with check (auth.uid() is not null);
+-- 删除：作者本人、应用作者或管理员
+create policy if not exists "comments_delete_author" on public.comments
+  for delete using (author_id = auth.uid());
+create policy if not exists "comments_delete_app_owner" on public.comments
+  for delete using (exists(select 1 from public.apps a where a.id = comments.app_id and a.owner_id = auth.uid()));
+create policy if not exists "comments_delete_admin" on public.comments
+  for delete using (public.is_admin(auth.uid()));
 
 -- 管理员表与函数（用于权限判定）
 create table if not exists public.admins (

@@ -60,11 +60,29 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
   async function postComment() {
     if (!userEmail) return alert('请先登录');
     if (!content.trim()) return;
-    const { error } = await supabase
-      .from('comments')
-      .insert({ app_id: app!.id, content: content.trim() });
-    if (error) alert(error.message);
-    else setContent('');
+    const { data: s } = await supabase.auth.getSession();
+    const token = s.session?.access_token;
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ app_id: app!.id, content: content.trim() })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(j.error || '发送失败'); return; }
+    setComments((prev) => [j.comment, ...prev]);
+    setContent('');
+  }
+
+  async function deleteComment(id: string) {
+    const { data: s } = await supabase.auth.getSession();
+    const token = s.session?.access_token;
+    const res = await fetch(`/api/comments/${id}` , { method: 'DELETE', headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      alert(j.error || '删除失败');
+      return;
+    }
+    setComments((prev) => prev.filter((c) => c.id !== id));
   }
 
   async function deleteApp() {
@@ -140,7 +158,12 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
               .filter((c) => c.app_id === app.id && !c.is_deleted)
               .map((c) => (
                 <div key={c.id} className="border rounded-xl p-3">
-                  <div className="text-sm text-gray-500">{new Date(c.created_at).toLocaleString()}</div>
+                  <div className="text-sm text-gray-500 flex items-center justify-between">
+                    <span>{new Date(c.created_at).toLocaleString()}</span>
+                    {userId && (
+                      <button className="text-xs text-red-600 hover:underline" onClick={() => deleteComment(c.id)}>删除</button>
+                    )}
+                  </div>
                   <div className="mt-1 whitespace-pre-wrap">{c.content}</div>
                 </div>
               ))}
