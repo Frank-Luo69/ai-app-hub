@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.2.0 (2025-08-20)
+
+Features
+- Comments (PR #4)
+  - API: POST /api/comments, DELETE /api/comments/:id（需登录，RLS 保护，Zod 校验）
+  - UI: 详情页评论区支持发表/删除与错误提示；仅作者/应用所有者/管理员显示删除入口
+  - Rate limit: SQL 函数 public.can_post_comment(win_seconds, max_count) + 插入策略限制（60秒最多5条/用户）
+
+Database
+- 迁移
+  - 003_comments_delete_policies.sql：评论删除策略（作者/应用所有者/管理员）
+  - 004_comments_rate_limit.sql：函数 can_post_comment 与插入策略更新
+- 回滚
+  - 004 回滚：恢复 insert 策略为仅需登录；drop function can_post_comment(int,int)
+
+CI
+- CodeQL、构建与单测通过；e2e 保持可选
+
 ## v0.1.0 (2025-08-20)
 
 Features
