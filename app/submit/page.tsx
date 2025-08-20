@@ -16,7 +16,7 @@ async function checkUrl(url: string) {
 export default function SubmitPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then((res: any) => setUserEmail(res.data?.user?.email ?? null));
   }, []);
 
   const [form, setForm] = useState({ title: '', description: '', play_url: '', cover_url: '', tags: '' });
@@ -39,6 +39,8 @@ export default function SubmitPage() {
       const suffix = Math.random().toString(36).slice(2, 8);
       const slug = `${base}-${suffix}`;
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const ownerId = sessionData.session?.user?.id;
       const { data, error } = await supabase.from('apps').insert({
         title: form.title.trim(),
         slug,
@@ -47,7 +49,8 @@ export default function SubmitPage() {
         play_url: form.play_url.trim(),
         source_host: (() => { try { return new URL(form.play_url).host } catch { return null } })(),
         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-        status: 'active'
+        status: 'active',
+        owner_id: ownerId,
       }).select().single();
 
       if (error) throw error;

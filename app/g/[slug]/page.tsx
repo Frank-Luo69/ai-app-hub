@@ -10,38 +10,48 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
   const [app, setApp] = useState<any | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [content, setContent] = useState('');
 
   useEffect(() => {
     // Fetch the app record by slug and all comments (filtered by the presence of an app_id)
-    supabase
+    (supabase as any)
       .from('apps')
       .select('*')
       .eq('slug', params.slug)
       .single()
-      .then(({ data }) => setApp(data));
-    supabase
+      .then((r: any) => setApp(r.data));
+    (supabase as any)
       .from('comments')
       .select('*')
       .order('created_at', { ascending: false })
-      .then(({ data }) => setComments((data || []).filter((c) => c.app_id)));
-    supabase.auth
+      .then((r: any) => setComments(((r.data || []) as any[]).filter((c: any) => c.app_id)));
+    (supabase as any).auth
       .getUser()
-      .then(({ data }) => setUserEmail(data.user?.email ?? null));
+      .then(async (r: any) => {
+        const u = r.data.user;
+        setUserEmail(u?.email ?? null);
+        setUserId(u?.id ?? null);
+        if (u?.id) {
+          const { data: adm } = await supabase.rpc('is_admin', { uid: u.id });
+          setIsAdmin(!!adm);
+        }
+      });
   }, [params.slug]);
 
   useEffect(() => {
     if (!app) return;
-    const channel = supabase
+    const channel = (supabase as any)
       .channel('comments-changes')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments', filter: `app_id=eq.${app.id}` },
-        (payload) => setComments((prev) => [payload.new, ...prev])
+        (payload: any) => setComments((prev: any[]) => [payload.new, ...prev])
       )
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      (supabase as any).removeChannel(channel);
     };
   }, [app]);
 
@@ -53,6 +63,24 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
       .insert({ app_id: app!.id, content: content.trim() });
     if (error) alert(error.message);
     else setContent('');
+  }
+
+  async function deleteApp() {
+    if (!app) return;
+    if (!confirm('确认删除该应用？此操作不可恢复')) return;
+    // 将 Supabase access token 传给 API 用于鉴权
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    const res = await fetch(`/api/apps/${app.id}`, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      alert(j.error || '删除失败');
+      return;
+    }
+    window.location.href = '/';
   }
 
   if (!app) return <div>加载中…</div>;
@@ -88,6 +116,12 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
               去玩
             </a>
           </div>
+          {(userId && (app.owner_id === userId || isAdmin)) && (
+            <div className="mt-3 flex gap-3">
+              {/* 预留编辑：后续实现 /edit 页面 */}
+              <button className="btn" onClick={deleteApp}>删除</button>
+            </div>
+          )}
         </div>
 
         <div className="card">

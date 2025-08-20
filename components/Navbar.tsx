@@ -7,8 +7,8 @@ import { supabase } from '@/lib/supabaseClient';
 export default function Navbar() {
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    (supabase as any).auth.getUser().then((res: any) => setEmail(res.data?.user?.email ?? null));
+    const { data: sub } = (supabase as any).auth.onAuthStateChange((_e: any, session: any) => {
       setEmail(session?.user?.email ?? null);
     });
     return () => { sub.subscription.unsubscribe(); };
