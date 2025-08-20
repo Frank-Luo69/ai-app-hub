@@ -2,10 +2,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useI18n } from '@/lib/i18n';
 
 function hostFrom(url: string) { try { return new URL(url).host; } catch { return ''; } }
 
 export default function AppDetail({ params }: { params: { slug: string }}) {
+  const { t } = useI18n();
   // Renamed from game to app to reflect the new app-centric model
   const [app, setApp] = useState<any | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -113,14 +115,17 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
               rel="noopener noreferrer"
               className="btn-primary px-4 py-2 rounded-xl"
             >
-              去玩
+              {t('play')}
             </a>
           </div>
-          {(userId && (app.owner_id === userId || isAdmin)) && (
+      {(userId && (app.owner_id === userId || isAdmin)) && (
             <div className="mt-3 flex gap-3">
-              {/* 预留编辑：后续实现 /edit 页面 */}
-              <button className="btn" onClick={deleteApp}>删除</button>
+        <a className="btn" href={`/edit/${app.id}`}>编辑</a>
+              <button className="btn" onClick={deleteApp}>{t('delete')}</button>
             </div>
+          )}
+          {app.owner_email && (
+            <div className="text-sm text-gray-600 mt-2">作者：{app.owner_email}</div>
           )}
         </div>
 

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import slugify from 'slugify';
+import { useI18n } from '@/lib/i18n';
 
 async function checkUrl(url: string) {
   const res = await fetch('/api/check-url', {
@@ -14,6 +15,7 @@ async function checkUrl(url: string) {
 }
 
 export default function SubmitPage() {
+  const { t } = useI18n();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then((res: any) => setUserEmail(res.data?.user?.email ?? null));
@@ -26,7 +28,7 @@ export default function SubmitPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!userEmail) { setMsg('请先登录'); return; }
+  if (!userEmail) { setMsg(t('login')); return; }
     setMsg(null); setBusy(true);
     try {
       const urlOk = await checkUrl(form.play_url);
@@ -64,6 +66,7 @@ export default function SubmitPage() {
         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
         status: 'active',
         owner_id: ownerId,
+        owner_email: userEmail,
       }).select().single();
 
       if (error) throw error;
@@ -77,8 +80,8 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">提交应用</h1>
-      {!userEmail && <div className="mb-4 text-sm text-gray-600">发帖/提交需要登录。请先点击右上角「登录」。</div>}
+  <h1 className="text-xl font-semibold mb-4">{t('submit')}</h1>
+  {!userEmail && <div className="mb-4 text-sm text-gray-600">发帖/提交需要登录。请先点击右上角「登录」。</div>}
       <form onSubmit={onSubmit} className="space-y-3 card">
         <input className="w-full border rounded-xl px-3 py-2" placeholder="标题" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
         <textarea className="w-full border rounded-xl px-3 py-2" placeholder="简介" rows={4} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
@@ -97,7 +100,7 @@ export default function SubmitPage() {
           </div>
         </div>
         <input className="w-full border rounded-xl px-3 py-2" placeholder="标签（逗号分隔）" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} />
-        <button className="btn-primary px-4 py-2 rounded-xl disabled:opacity-50" disabled={busy}>提交</button>
+  <button className="btn-primary px-4 py-2 rounded-xl disabled:opacity-50" disabled={busy}>{t('submit')}</button>
         {msg && <div className="text-sm text-red-600">{msg}</div>}
       </form>
     </div>

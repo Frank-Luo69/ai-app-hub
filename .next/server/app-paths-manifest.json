@@ -3,8 +3,10 @@
   "/api/apps/[id]/route": "app/api/apps/[id]/route.js",
   "/api/check-url/route": "app/api/check-url/route.js",
   "/auth/page": "app/auth/page.js",
-  "/g/[slug]/page": "app/g/[slug]/page.js",
+  "/edit/[id]/page": "app/edit/[id]/page.js",
+  "/my/page": "app/my/page.js",
   "/page": "app/page.js",
   "/submit/page": "app/submit/page.js",
+  "/g/[slug]/page": "app/g/[slug]/page.js",
   "/api/upload/route": "app/api/upload/route.js"
 }

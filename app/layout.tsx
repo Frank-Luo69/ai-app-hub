@@ -1,6 +1,7 @@
 
 import './globals.css';
 import Navbar from '@/components/Navbar';
+import { I18nProvider } from '@/lib/i18n';
 
 export const metadata = {
   // Adjusted to reflect the shift from a game-focused platform to an app-focused one
@@ -12,8 +13,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body>
-        <Navbar />
-        <main className="container py-6">{children}</main>
+        <I18nProvider>
+          <Navbar />
+          <main className="container py-6">{children}</main>
+        </I18nProvider>
       </body>
     </html>
   );

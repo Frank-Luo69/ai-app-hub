@@ -47,6 +47,13 @@ export default function AppCard({ app }: { app: any }) {
               </span>
             ))}
           </div>
+          {app.status && (
+            <div className="mt-2">
+              <span className={`text-xs px-2 py-1 rounded border ${app.status === 'active' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
+                {app.status}
+              </span>
+            </div>
+          )}
           {/* 预留：当当前用户为作者或管理员时显示编辑入口（后续移动到服务端渲染可减少闪烁） */}
         </div>
       </div>

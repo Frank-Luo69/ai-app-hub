@@ -10,6 +10,7 @@ create table if not exists public.apps (
   cover_url text,
   play_url text not null,
   source_host text,
+  owner_email text,
   tags text[] default '{}',
   status text not null default 'active',
   -- 所有者：默认当前登录用户

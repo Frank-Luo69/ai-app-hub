@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useI18n } from '@/lib/i18n';
 
 export default function Navbar() {
+  const { t, lang, setLang } = useI18n();
   const [email, setEmail] = useState<string | null>(null);
   useEffect(() => {
     (supabase as any).auth.getUser().then((res: any) => setEmail(res.data?.user?.email ?? null));
@@ -21,14 +23,18 @@ export default function Navbar() {
       <div className="container h-14 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Updated brand and navigation text from "Game" to "App" */}
-          <Link href="/" className="font-semibold">AI Mini-App Hub</Link>
-          <Link href="/submit" className="text-sm text-gray-600 hover:underline">提交应用</Link>
+          <Link href="/" className="font-semibold">{t('brand')}</Link>
+          <Link href="/submit" className="text-sm text-gray-600 hover:underline">{t('submit')}</Link>
+          <Link href="/my" className="text-sm text-gray-600 hover:underline">{t('myApps')}</Link>
         </div>
         <div className="flex items-center gap-3">
+          <button className="text-xs text-gray-600 border rounded px-2 py-1" onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}>
+            {lang === 'zh' ? 'EN' : '中'}
+          </button>
           {email ? (<>
-            <span className="text-sm text-gray-600">已登录：{email}</span>
-            <button className="btn" onClick={signOut}>登出</button>
-          </>) : (<Link className="btn" href="/auth">登录</Link>)}
+            <span className="text-sm text-gray-600">{email}</span>
+            <button className="btn" onClick={signOut}>{t('logout')}</button>
+          </>) : (<Link className="btn" href="/auth">{t('login')}</Link>)}
         </div>
       </div>
     </div>
