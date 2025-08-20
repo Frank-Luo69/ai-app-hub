@@ -35,6 +35,20 @@ create policy if not exists "comments_select_public" on public.comments for sele
 -- 插入：必须登录且 owner_id=auth.uid()（允许使用列默认值）
 create policy if not exists "apps_insert_auth" on public.apps for insert with check (auth.uid() is not null and owner_id = auth.uid());
 create policy if not exists "comments_insert_auth" on public.comments for insert with check (auth.uid() is not null);
+-- 速率限制函数：窗口内发帖次数
+create or replace function public.can_post_comment(win_seconds int, max_count int)
+returns boolean language sql volatile as $$
+  select (
+    select count(*) from public.comments c
+    where c.author_id = auth.uid()
+      and c.created_at > now() - make_interval(secs => win_seconds)
+  ) < max_count;
+$$;
+
+-- 使用函数增强 INSERT 策略（每用户60秒最多5条）
+drop policy if exists "comments_insert_auth" on public.comments;
+create policy "comments_insert_auth" on public.comments for insert
+  with check (auth.uid() is not null and public.can_post_comment(60, 5));
 -- 删除：作者本人、应用作者或管理员
 create policy if not exists "comments_delete_author" on public.comments
   for delete using (author_id = auth.uid());

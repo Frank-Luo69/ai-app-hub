@@ -11,6 +11,8 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
   // Renamed from game to app to reflect the new app-centric model
   const [app, setApp] = useState<any | null>(null);
   const [comments, setComments] = useState<any[]>([]);
+  const [cmtBusy, setCmtBusy] = useState(false);
+  const [cmtErr, setCmtErr] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -60,17 +62,24 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
   async function postComment() {
     if (!userEmail) return alert('请先登录');
     if (!content.trim()) return;
-    const { data: s } = await supabase.auth.getSession();
-    const token = s.session?.access_token;
-    const res = await fetch('/api/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ app_id: app!.id, content: content.trim() })
-    });
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) { alert(j.error || '发送失败'); return; }
-    setComments((prev) => [j.comment, ...prev]);
-    setContent('');
+    setCmtBusy(true); setCmtErr(null);
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const token = s.session?.access_token;
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ app_id: app!.id, content: content.trim() })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || '发送失败');
+      setComments((prev) => [j.comment, ...prev]);
+      setContent('');
+    } catch (e: any) {
+      setCmtErr(e.message || '发送失败');
+    } finally {
+      setCmtBusy(false);
+    }
   }
 
   async function deleteComment(id: string) {
@@ -150,9 +159,10 @@ export default function AppDetail({ params }: { params: { slug: string }}) {
         <div className="card">
           <h2 className="font-semibold mb-3">讨论区</h2>
           <div className="flex gap-2 mb-3">
-            <input className="flex-1 border rounded-xl px-3 py-2" placeholder={userEmail ? '写点什么…' : '登录后才能发言'} value={content} onChange={e => setContent(e.target.value)} disabled={!userEmail} />
-            <button className="btn" onClick={postComment} disabled={!userEmail || !content.trim()}>发送</button>
+            <input className="flex-1 border rounded-xl px-3 py-2" placeholder={userEmail ? '写点什么…' : '登录后才能发言'} value={content} onChange={e => setContent(e.target.value)} disabled={!userEmail || cmtBusy} />
+            <button className="btn" onClick={postComment} disabled={!userEmail || !content.trim() || cmtBusy}>{cmtBusy ? '发送中…' : '发送'}</button>
           </div>
+          {cmtErr && <div className="text-sm text-red-600 mb-2">{cmtErr}</div>}
           <div className="space-y-3">
             {comments
               .filter((c) => c.app_id === app.id && !c.is_deleted)
