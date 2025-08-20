@@ -4,7 +4,15 @@ import { FormEvent, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import slugify from 'slugify';
 import { useI18n } from '@/lib/i18n';
-import { appFormSchema, parseTagsInput } from '@/lib/forms';
+import { z } from 'zod';
+
+const SubmitSchema = z.object({
+  title: z.string().min(1, '标题必填'),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  play_url: z.string().url('请输入有效链接'),
+  cover_url: z.string().url('封面链接需为 URL').optional().or(z.literal('')),
+  tags: z.string().optional().or(z.literal('')),
+});
 
 async function checkUrl(url: string) {
   const res = await fetch('/api/check-url', {
@@ -30,23 +38,19 @@ export default function SubmitPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-  if (!userEmail) { setMsg(t('login')); return; }
+    if (!userEmail) { setMsg(t('login')); return; }
     setMsg(null); setBusy(true);
     try {
-      const parsed = appFormSchema.safeParse({
-        title: form.title,
-        description: form.description,
-        play_url: form.play_url,
-        cover_url: form.cover_url,
-        tags: parseTagsInput(form.tags),
-        status: 'active',
-      });
+      // client-side validation
+      setErrors({});
+      const parsed = SubmitSchema.safeParse(form);
       if (!parsed.success) {
-        const errs: Record<string, string> = {};
-        for (const e of parsed.error.issues) {
-          if (e.path[0]) errs[e.path[0] as string] = e.message;
+        const e: Record<string, string> = {};
+        for (const issue of parsed.error.issues) {
+          const k = issue.path[0] as string;
+          e[k] = issue.message;
         }
-        setErrors(errs);
+        setErrors(e);
         setBusy(false);
         return;
       }
@@ -82,7 +86,7 @@ export default function SubmitPage() {
         cover_url: form.cover_url.trim() || null,
         play_url: form.play_url.trim(),
         source_host: (() => { try { return new URL(form.play_url).host } catch { return null } })(),
-        tags: parseTagsInput(form.tags),
+        tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
         status: 'active',
         owner_id: ownerId,
         owner_email: userEmail,
