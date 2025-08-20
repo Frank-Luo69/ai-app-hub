@@ -16,10 +16,11 @@ async function checkUrl(url: string) {
 export default function SubmitPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then((res: any) => setUserEmail(res.data?.user?.email ?? null));
   }, []);
 
   const [form, setForm] = useState({ title: '', description: '', play_url: '', cover_url: '', tags: '' });
+  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -34,11 +35,25 @@ export default function SubmitPage() {
         setBusy(false);
         return;
       }
+      // 如果选择了文件，先上传
+      if (file) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes((file as File).type)) { setMsg('仅支持 jpg/png/webp'); setBusy(false); return; }
+        if ((file as File).size > 2 * 1024 * 1024) { setMsg('图片大小不能超过 2MB'); setBusy(false); return; }
+        const fd = new FormData();
+        fd.append('file', file as File);
+        if (form.cover_url) fd.append('oldUrl', form.cover_url);
+        const up = await fetch('/api/upload', { method: 'POST', body: fd }).then(r => r.json());
+        if (!up.ok) { setMsg(up.error || '上传失败'); setBusy(false); return; }
+        setForm((s) => ({ ...s, cover_url: up.url }));
+      }
+
       // Use "app" as the fallback slug prefix instead of "game"
       let base = slugify(form.title || 'app', { lower: true, strict: true }) || 'app';
       const suffix = Math.random().toString(36).slice(2, 8);
       const slug = `${base}-${suffix}`;
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const ownerId = sessionData.session?.user?.id;
       const { data, error } = await supabase.from('apps').insert({
         title: form.title.trim(),
         slug,
@@ -47,7 +62,8 @@ export default function SubmitPage() {
         play_url: form.play_url.trim(),
         source_host: (() => { try { return new URL(form.play_url).host } catch { return null } })(),
         tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
-        status: 'active'
+        status: 'active',
+        owner_id: ownerId,
       }).select().single();
 
       if (error) throw error;
@@ -73,7 +89,13 @@ export default function SubmitPage() {
           onChange={(e) => setForm({ ...form, play_url: e.target.value })}
           required
         />
-        <input className="w-full border rounded-xl px-3 py-2" placeholder="封面图链接（可选）" value={form.cover_url} onChange={e => setForm({ ...form, cover_url: e.target.value })} />
+        <div className="space-y-2">
+          <input className="w-full border rounded-xl px-3 py-2" placeholder="封面图链接（可选）" value={form.cover_url} onChange={e => setForm({ ...form, cover_url: e.target.value })} />
+          <div className="flex items-center gap-3">
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            {form.cover_url && <img src={form.cover_url} alt="cover" className="w-24 h-16 object-cover rounded border" />}
+          </div>
+        </div>
         <input className="w-full border rounded-xl px-3 py-2" placeholder="标签（逗号分隔）" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} />
         <button className="btn-primary px-4 py-2 rounded-xl disabled:opacity-50" disabled={busy}>提交</button>
         {msg && <div className="text-sm text-red-600">{msg}</div>}

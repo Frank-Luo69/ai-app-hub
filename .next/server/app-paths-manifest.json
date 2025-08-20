@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/apps/[id]/route": "app/api/apps/[id]/route.js",
+  "/api/check-url/route": "app/api/check-url/route.js",
+  "/auth/page": "app/auth/page.js",
+  "/g/[slug]/page": "app/g/[slug]/page.js",
+  "/page": "app/page.js",
+  "/submit/page": "app/submit/page.js",
+  "/api/upload/route": "app/api/upload/route.js"
+}

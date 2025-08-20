@@ -47,6 +47,7 @@ export default function AppCard({ app }: { app: any }) {
               </span>
             ))}
           </div>
+          {/* 预留：当当前用户为作者或管理员时显示编辑入口（后续移动到服务端渲染可减少闪烁） */}
         </div>
       </div>
     </div>

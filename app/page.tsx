@@ -16,8 +16,8 @@ export default function HomePage() {
       .from('apps')
       .select('*')
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setApps(data || []);
+  .then((res: any) => {
+        setApps((res as any).data || []);
       });
   }, []);
 
