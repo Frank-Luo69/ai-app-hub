@@ -2,6 +2,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useI18n } from '@/lib/i18n';
+import { parseTags } from '@/lib/tags';
 
 export default function EditPage({ params }: { params: { id: string } }) {
   const { t } = useI18n();
@@ -59,7 +60,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
         <textarea className="w-full border rounded-xl px-3 py-2" rows={4} value={app.description || ''} onChange={e => setApp({ ...app, description: e.target.value })} placeholder="简介" />
         <input className="w-full border rounded-xl px-3 py-2" value={app.play_url || ''} onChange={e => setApp({ ...app, play_url: e.target.value })} placeholder="链接" required />
         <input className="w-full border rounded-xl px-3 py-2" value={app.cover_url || ''} onChange={e => setApp({ ...app, cover_url: e.target.value })} placeholder="封面图链接" />
-        <input className="w-full border rounded-xl px-3 py-2" value={(app.tags || []).join(', ')} onChange={e => setApp({ ...app, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="标签（逗号分隔）" />
+  <input className="w-full border rounded-xl px-3 py-2" value={(app.tags || []).join(', ')} onChange={e => setApp({ ...app, tags: parseTags(e.target.value) })} placeholder="标签（逗号分隔）" />
         <div className="flex items-center gap-3">
           <label className="text-sm">状态</label>
           <select className="border rounded-xl px-2 py-1" value={app.status || 'active'} onChange={e => setApp({ ...app, status: e.target.value })}>
