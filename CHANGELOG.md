@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.1 (2025-09-08)
+
+Fixes
+- Tags：修复提交/编辑时的标签未按逗号拆分的问题；统一为小写、去重，并为历史数据执行一次性规范化。
+
+Database
+- 迁移：005_tags_normalization.sql
+  - 新增函数 public.normalize_tags(text[])、触发器 before insert/update 规范化 apps.tags
+  - 一次性更新历史数据，并添加 GIN 索引 idx_apps_tags_gin
+
+Upgrade Notes
+1) 在 Supabase SQL Editor 或迁移流水线上执行 supabase/migrations/005_tags_normalization.sql
+2) 无需代码改动配置，前后端已内建拆分与清洗逻辑
+
+Rollback
+- 可安全删除触发器与函数并移除索引：
+  - drop trigger if exists trg_apps_tags_normalize on public.apps;
+  - drop function if exists public.before_apps_tags_normalize();
+  - drop function if exists public.normalize_tags(text[]);
+  - drop index if exists idx_apps_tags_gin;
+
 ## v0.2.0 (2025-08-20)
 
 Features

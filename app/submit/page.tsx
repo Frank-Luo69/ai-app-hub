@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import slugify from 'slugify';
 import { useI18n } from '@/lib/i18n';
 import { z } from 'zod';
+import { parseTags } from '@/lib/tags';
 
 const SubmitSchema = z.object({
   title: z.string().min(1, '标题必填'),
@@ -86,7 +87,7 @@ export default function SubmitPage() {
         cover_url: form.cover_url.trim() || null,
         play_url: form.play_url.trim(),
         source_host: (() => { try { return new URL(form.play_url).host } catch { return null } })(),
-        tags: form.tags.split(',').map(s => s.trim()).filter(Boolean),
+  tags: parseTags(form.tags),
         status: 'active',
         owner_id: ownerId,
         owner_email: userEmail,
